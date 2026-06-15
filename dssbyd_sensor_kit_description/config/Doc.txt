@@ -1,0 +1,75 @@
+ความแตกต่างของ 2 ไฟล์นี้
+
+ภาพรวม (Big Picture)
+base_link  →  sensor_kit_base_link  →  sensors (camera, lidar, GNSS)
+    │                  │                        │
+    │                  │                        │
+sensors_calibration  sensor_kit_calibration
+    .yaml                  .yaml
+ง่ายๆ คือ ไฟล์แรก บอกว่า sensor kit อยู่ที่ไหนบนรถ, ไฟล์สอง บอกว่าแต่ละ sensor อยู่ที่ไหนบน sensor kit
+
+เปรียบเทียบแบบละเอียด
+--------------------------------------------------------------------------------------------------------|
+			| sensors_calibration.yaml		| sensor_kit_calibration.yaml		|
+--------------------------------------------------------------------------------------------------------|
+Parent Frame		| base_link				| sensor_kit_base_link			|
+Child Frame		| sensor_kit_base_link			| sensors ทุกตัว (camera, lidar, GNSS)	|
+บอกตำแหน่งของ		| Sensor Kit บนรถ			| แต่ละ Sensor บน Sensor Kit		|
+จำนวน entry		| แค่ 1 entry				| หลาย entry (เท่ากับจำนวน sensor)	|
+อ้างอิงจาก		| จุดกึ่งกลางเพลาหลังของรถ (rear-axle)	| ฐานของ Lidar หลัก			|
+--------------------------------------------------------------------------------------------------------|
+
+อธิบาย Frame แต่ละตัว
+base_link คืออะไร?
+[รถ viewed from side]
+
+        🎥 📡 sensor kit
+         |
+    _____|_____
+   |           |
+   🔘---------🔘   ← เพลาหลัง (rear axle)
+                      ↑
+      base_link อยู่ตรงนี้ (จุดกึ่งกลางเพลาหลัง ระดับพื้น)
+sensor_kit_base_link คืออะไร?
+   🎥 📡 ← sensors ต่างๆ
+    |  |
+   [===]  ← sensor_kit_base_link (ฐานของ Lidar หลัก)
+
+ตัวอย่างให้เห็นภาพชัดขึ้น
+sensors_calibration.yaml
+
+"Sensor Kit อยู่ห่างจากเพลาหลังของรถเท่าไหร่?"
+
+base_link:
+  sensor_kit_base_link:
+    x: 1.500   # ข้างหน้าเพลาหลัง 1.5 เมตร
+    y: 0.000   # กึ่งกลางรถ
+    z: 2.000   # สูงจากพื้น 2 เมตร
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+sensor_kit_calibration.yaml
+
+"แต่ละ sensor อยู่ห่างจากฐาน Sensor Kit เท่าไหร่?"
+
+sensor_kit_base_link:
+  camera0/camera_link:
+    x: 0.200   # กล้องอยู่หน้า Lidar 20 cm
+    y: -0.100  # เยื้องซ้าย 10 cm
+    z: 0.050   # สูงกว่า 5 cm
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  rs_helios_top_base_link:
+    x: 0.0     # Lidar หลักอยู่ตรงกลาง (reference point)
+    y: 0.0
+    z: 0.0
+    ...
+
+สรุปง่ายๆ
+sensors_calibration.yaml
+└── ตอบคำถาม: "Sensor Kit ติดตั้งอยู่ที่ไหน บนตัวรถ?"
+
+sensor_kit_calibration.yaml  
+└── ตอบคำถาม: "Camera, Lidar, GNSS แต่ละตัว ติดตั้งอยู่ที่ไหน บน Sensor Kit?"
+ทั้งสองไฟล์ทำงานร่วมกัน เพื่อให้ Autoware รู้ตำแหน่งที่แน่นอนของ sensor ทุกตัว เทียบกับตัวรถ ครับ! 🚗

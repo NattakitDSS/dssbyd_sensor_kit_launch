@@ -1,0 +1,51 @@
+<launch>
+  <arg name="launch_driver" default="true"/>
+  <arg name="coordinate_system" default="1" description="0:UTM, 1:MGRS, 2:PLANE"/>
+  <arg name="navsatfix_topic_name"/>
+  <arg name="oriented_imu_topic_name"/>
+
+<!--GNSS launcher is launched only NTRIP cliend node due to the integrated sensor between INU and GNSS package on BYD will be launched from imu.launch.xml instead. -->
+
+  <group>
+    <push-ros-namespace namespace="gnss"/>
+    <!-- NTRIP client-->
+    <!-- Require NMEA to be sent for rtcm message to be received -->
+    <!-- For example: ros2 topic pub -1 /sensing/gnss/ntrip_client/nmea nmea_msgs/Sentence '''{sentence: "$GPGGA,034906.242,1345.379,N,10031.732,E,1,12,1.0,0.0,M,0.0,M,,*69"}''' -->
+    <include file="$(find-pkg-share ntrip_client)/ntrip_client_launch.py">
+      <arg name="host" value="110.78.0.54"/>
+      <arg name="port" value="2116"/>
+      <arg name="mountpoint" value="VRS_RTCM32"/>
+      <arg name="username" value="'1103702127159'"/>
+      <arg name="password" value="HY27"/>
+      <arg name="debug" value="false"/>
+    </include>
+    <!-- <include file="$(find-pkg-share ntrip_client)/ntrip_client_launch.py">
+      <arg name="host" value="202.129.206.67"/>
+      <arg name="port" value="6089"/>
+      <arg name="mountpoint" value="T31U06683"/>
+      <arg name="username" value="byd"/>
+      <arg name="password" value="byd"/>
+      <arg name="debug" value="false"/>
+    </include> -->
+
+    <!-- generate NMEA sentence from NavSatFix for NTRIP client -->
+    <include file="$(find-pkg-share nmea_generator)/launch/nmea_generator.launch.xml">
+      <arg name="nav_sat_fix_topic" value="$(var navsatfix_topic_name)"/>
+      <arg name="nmea_topic" value="ntrip_client/nmea"/>
+    </include>
+    
+    <!-- NavSatFix to MGRS Pose -->
+    <include file="$(find-pkg-share gnss_poser)/launch/gnss_poser.launch.xml">
+      <arg name="use_gnss_ins_orientation" value="false" /> 
+      <arg name="use_imu_orientation" value="true"/>
+      <arg name="input_topic_fix" value="$(var navsatfix_topic_name)"/>
+      <arg name="output_topic_gnss_pose" value="pose"/>
+      <arg name="output_topic_gnss_pose_cov" value="pose_with_covariance"/>
+      <arg name="output_topic_gnss_fixed" value="fixed"/>
+      <arg name="coordinate_system" value="$(var coordinate_system)"/>
+      <arg name="gnss_frame" value="gnss_link"/>
+      <arg name="oriented_imu_topic_name" value="$(var oriented_imu_topic_name)"/>
+      <arg name="pose_fixed_covariance" value="10.0"/>
+    </include>
+  </group>
+</launch>

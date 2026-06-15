@@ -1,0 +1,34 @@
+<launch>
+  <arg name="launch_driver" default="true"/>
+  <arg name="rtcm_topic_name"/>
+
+  <group>
+    <push-ros-namespace namespace="imu"/>
+
+    <group if="$(eval &quot;'$(var launch_driver)'&quot;)">
+      <push-ros-namespace namespace="xsens"/>
+      <include file="$(find-pkg-share gensurv_byd_sensor_launch)/launch/xsens_mti_node.launch.py">
+        <arg name="parameters_file_path" value="$(find-pkg-share gensurv_byd_sensor_kit_launch)/data/xsens_mti_node.yaml" />
+        <arg name="rtcm_topic_name" value="$(var rtcm_topic_name)"/>
+      </include>
+    </group>
+
+    <!-- generate orientation from imu data and magnetic field -->
+    <node pkg="imu_complementary_filter" exec="complementary_filter_node" name="complementary_filter_node" output="log">
+      <param name="do_bias_estimation" value="true"/>
+      <param name="do_adaptive_gain" value="true"/>
+      <param name="use_mag" value="true"/>
+      <param name="gain_acc" value="0.01"/>
+      <param name="gain_mag" value="0.01"/>
+      <remap from="/imu/data_raw" to="xsens/imu/data" />
+      <remap from="/imu/mag" to="xsens/imu/mag" />
+      <remap from="imu/data" to="oriented/imu" />
+    </node>
+
+    <include file="$(find-pkg-share imu_corrector)/launch/imu_corrector.launch.xml">
+      <arg name="input_topic" value="xsens/imu/data"/>
+      <arg name="output_topic" value="imu_data"/>
+      <arg name="param_file" value="$(find-pkg-share gensurv_byd_sensor_kit_launch)/data/imu_corrector.param.yaml"/>
+    </include>
+  </group>
+</launch>

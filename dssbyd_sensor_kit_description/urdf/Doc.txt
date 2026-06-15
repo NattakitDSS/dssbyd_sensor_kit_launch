@@ -1,0 +1,54 @@
+ความแตกต่างของ 3 ส่วน
+ทั้งหมดทำงานร่วมกันแบบนี้ครับ:
+[.yaml files]                 [.xacro files]
+ข้อมูลตัวเลข            →    นำไปสร้าง Robot Model (URDF)
+(ตำแหน่ง/มุม)                    ใน ROS2
+
+เปรียบเทียบทั้ง 3 ส่วน
+			| sensors_calibration.yaml		| sensor_kit_calibration.yaml		| .xacro files			|
+------------------------|---------------------------------------|---------------------------------------|-------------------------------|
+ประเภทไฟล์		| ข้อมูล (Data)				| ข้อมูล (Data)				| โครงสร้าง (Structure)		|
+หน้าที่			| เก็บตัวเลขตำแหน่ง kit บนรถ		| เก็บตัวเลขตำแหน่ง sensors บน kit	| นำตัวเลขไปสร้าง TF tree จริงๆ	|
+แก้ไขบ่อยไหม		| ✅ ใช่ (หลัง calibrate)		| ✅ ใช่ (หลัง calibrate)		| ❌ ไม่บ่อย(แค่ตอนเพิ่ม/ลดsensor)|
+
+หน้าที่ของแต่ละ .xacro
+sensor_kit.xacro
+
+เชื่อมต่อ sensors แต่ละตัว → sensor_kit_base_link
+
+อ่านค่าจาก sensor_kit_calibration.yaml
+
+<!-- ดึงค่า x,y,z,roll,pitch,yaw จาก sensor_kit_calibration.yaml -->
+<xacro:VLS-128 parent="sensor_kit_base_link" name="rs_helios_top" ...>
+  <origin
+    xyz="${calibration['sensor_kit_base_link']['rs_helios_top_base_link']['x']} ..."
+    rpy="${calibration['sensor_kit_base_link']['rs_helios_top_base_link']['roll']} ..."
+  />
+</xacro:VLS-128>
+sensors.xacro
+
+เชื่อมต่อ sensor_kit_base_link → base_link
+
+อ่านค่าจาก sensors_calibration.yaml
+
+<!-- ดึงค่า x,y,z,roll,pitch,yaw จาก sensors_calibration.yaml -->
+<xacro:sensor_kit_macro
+  parent="base_link"
+  x="${calibration['base_link']['sensor_kit_base_link']['x']}"
+  ...
+/>
+
+ภาพรวมการทำงานร่วมกัน
+sensors_calibration.yaml          sensor_kit_calibration.yaml
+           ↓                                                     ↓
+  sensors.xacro              →        sensor_kit.xacro
+(เชื่อม kit กับรถ)                  (เชื่อม sensors กับ kit)
+           ↓                                                     ↓
+        └──────────────┬─────────────────────┘
+                                  ↓
+                  TF Tree ใน ROS2
+         (Autoware รู้ตำแหน่ง sensor ทุกตัวบนรถ)
+
+สรุปง่ายๆ
+ไฟล์เปรียบเหมือนsensors_calibration.yamlพิมพ์เขียว บอกว่า sensor kit ติดตั้งตรงไหนของรถsensor_kit_calibration.yamlพิมพ์เขียว บอกว่า sensor แต่ละตัวอยู่ตรงไหนของ kitsensors.xacroช่างก่อสร้าง ที่เอาพิมพ์เขียวไปสร้างโครงสร้างรถ-kitsensor_kit.xacroช่างก่อสร้าง ที่เอาพิมพ์เขียวไปสร้างโครงสร้าง kit-sensors
+.yaml = ข้อมูลตัวเลข / .xacro = นำข้อมูลไปใช้สร้าง Robot Model จริงๆ ครับ! 🚗
